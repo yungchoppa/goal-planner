@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function loadWords() {
-    fetch('/words')
+    fetch('/api/words')
       .then(response => response.json())
       .then(data => {
         renderWords(data.words);
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
   addBtn.addEventListener('click', function() {
     const word = wordInput.value.trim();
     if (word) {
-      fetch('/add', {
+      fetch('/api/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
