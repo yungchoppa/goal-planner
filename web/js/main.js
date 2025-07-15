@@ -5,10 +5,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function renderWords(words) {
     wordsList.innerHTML = '';
-    words.forEach(function(word) {
-      const li = document.createElement('li');
-      li.textContent = word;
-      wordsList.appendChild(li);
+    words.forEach(function(word, i) {
+      setTimeout(function() {
+        const li = document.createElement('li');
+        li.textContent = word;
+        li.className = 'li-fade-in text-slate-800 text-lg';
+        wordsList.appendChild(li);
+      }, i * 120);
     });
   }
 
