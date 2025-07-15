@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
     goals.forEach(g => {
       if (g.childIDs) {
         g.childIDs.forEach(childId => {
-          links.push({ source: g.id, target: childId });
+          links.push({ source: childId, target: g.id });
         });
       }
     });
@@ -61,6 +61,26 @@ document.addEventListener('DOMContentLoaded', function() {
       console.log('update() called, links:', links.length, 'nodes:', nodes.length);
       // Связи
       svg.innerHTML = '';
+      // Добавляем marker-стрелку (один раз на svg)
+      if (!svg.querySelector('marker#arrowhead')) {
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrowhead');
+        marker.setAttribute('markerWidth', '8');
+        marker.setAttribute('markerHeight', '8');
+        marker.setAttribute('refX', '6');
+        marker.setAttribute('refY', '4');
+        marker.setAttribute('orient', 'auto');
+        marker.setAttribute('markerUnits', 'strokeWidth');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M 0 1 L 6 4 L 0 7 Z');
+        path.setAttribute('fill', '#94a3b8');
+        marker.appendChild(path);
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+      }
+      const cardWidth = 220;
+      const cardHeight = 80;
       links.forEach(link => {
         // D3 forceLink мутирует link.source/target: могут быть id или объектом
         let source = link.source;
@@ -86,18 +106,27 @@ document.addEventListener('DOMContentLoaded', function() {
           });
           return;
         }
+        // Линия от центра child к краю карточки parent
+        const dx = target.x - source.x;
+        const dy = target.y - source.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        // Смещение только у parent (конец линии)
+        const tx = target.x - (dx/dist) * (cardWidth/2 + 8);
+        const ty = target.y - (dy/dist) * (cardHeight/2 + 8);
         // Debug: вывод координат узлов и связей
         console.log('draw line', {
           from: {x: source.x, y: source.y, id: source.id},
-          to: {x: target.x, y: target.y, id: target.id}
+          to: {x: tx, y: ty, id: target.id}
         });
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         line.setAttribute('x1', source.x);
         line.setAttribute('y1', source.y);
-        line.setAttribute('x2', target.x);
-        line.setAttribute('y2', target.y);
+        line.setAttribute('x2', tx);
+        line.setAttribute('y2', ty);
         line.setAttribute('stroke', '#94a3b8');
         line.setAttribute('stroke-width', '3');
+        // Стрелка у конца линии (child → parent)
+        line.setAttribute('marker-end', 'url(#arrowhead)');
         svg.appendChild(line);
       });
 
@@ -115,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
         card.style.left = (node.x - cardWidth / 2) + 'px';
         card.style.top = (node.y - cardHeight / 2) + 'px';
         card.style.zIndex = 2;
-        card.innerHTML = `<div class="font-bold text-lg mb-2">${node.name}</div>`;
+        card.innerHTML = `<div class="font-bold text-lg mb-2 text-slate-900 dark:text-slate-100">${node.name}</div>`;
         cardLayer.appendChild(card);
 
         // Drag & drop с фиксацией узла
