@@ -5,6 +5,113 @@
 // <script src="https://d3js.org/d3.v7.min.js"></script>
 
 document.addEventListener('DOMContentLoaded', function() {
+  // --- Add Goal form submit logic ---
+  function closeModal() {
+    const modal = document.getElementById('modal');
+    if (modal) modal.classList.add('hidden');
+  }
+  function resetAddGoalForm() {
+    const title = document.getElementById('goal-title');
+    if (title) title.value = '';
+    if (window.parentAuto) window.parentAuto.setSelected([]);
+    if (window.childAuto) window.childAuto.setSelected([]);
+  }
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'save-btn') {
+      const name = document.getElementById('goal-title').value.trim();
+      const parentIDs = window.parentAuto ? window.parentAuto.getSelected().map(String) : [];
+      const childIDs = window.childAuto ? window.childAuto.getSelected().map(String) : [];
+      if (!name) return;
+      fetch('/api/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, parentIDs, childIDs })
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Server error');
+          return res.json();
+        })
+        .then(() => {
+          closeModal();
+          resetAddGoalForm();
+          // Обновить граф
+          loadGoals();
+        })
+        .catch(() => alert('Ошибка при добавлении цели'));
+    }
+    if (e.target && e.target.id === 'cancel-add-goal') {
+      closeModal();
+      resetAddGoalForm();
+    }
+  });
+  // --- Autocomplete multi-select logic for Add Goal form ---
+  function setupAutocomplete(goals, inputId, dropdownId, selectedId, getOtherSelected) {
+    const input = document.getElementById(inputId);
+    const dropdown = document.getElementById(dropdownId);
+    const selected = document.getElementById(selectedId);
+    let selectedGoals = [];
+    function renderDropdown(filter) {
+      dropdown.innerHTML = '';
+      const filterVal = filter.trim().toLowerCase();
+      // Получаем id, выбранные в другом селекторе
+      const otherSelected = getOtherSelected ? getOtherSelected() : [];
+      const filtered = goals.filter(g =>
+        !selectedGoals.includes(g.id) &&
+        !otherSelected.includes(g.id) &&
+        (filterVal === '' || g.name.toLowerCase().includes(filterVal))
+      );
+      if (filtered.length === 0) {
+        dropdown.classList.add('hidden');
+        return;
+      }
+      filtered.forEach(g => {
+        const opt = document.createElement('div');
+        opt.className = 'px-3 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700';
+        opt.textContent = g.name;
+        opt.onclick = () => {
+          selectedGoals.push(g.id);
+          renderSelected();
+          dropdown.classList.add('hidden');
+          input.value = '';
+        };
+        dropdown.appendChild(opt);
+      });
+      dropdown.classList.remove('hidden');
+    }
+    function renderSelected() {
+      selected.innerHTML = '';
+      selectedGoals.forEach(id => {
+        const g = goals.find(goal => goal.id === id);
+        if (!g) return;
+        const tag = document.createElement('span');
+        tag.className = 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded px-2 py-1 text-xs flex items-center gap-1';
+        tag.textContent = g.name;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'ml-1 text-red-500 hover:text-red-700';
+        remove.innerHTML = '&times;';
+        remove.onclick = () => {
+          selectedGoals = selectedGoals.filter(goalId => goalId !== id);
+          renderSelected();
+        };
+        tag.appendChild(remove);
+        selected.appendChild(tag);
+      });
+    }
+    input.addEventListener('input', e => {
+      renderDropdown(e.target.value);
+    });
+    input.addEventListener('focus', e => {
+      renderDropdown(e.target.value);
+    });
+    input.addEventListener('blur', () => {
+      setTimeout(() => dropdown.classList.add('hidden'), 150);
+    });
+    return {
+      getSelected: () => selectedGoals,
+      setSelected: ids => { selectedGoals = ids; renderSelected(); }
+    };
+  }
   let graphContainer = document.getElementById('goals-graph');
   if (!graphContainer) {
     graphContainer = document.createElement('div');
@@ -209,6 +316,14 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(response => response.json())
       .then(data => {
         renderGraph(data.goals);
+        // --- Autocomplete for Add Goal form ---
+        if (document.getElementById('parent-autocomplete') && document.getElementById('child-autocomplete')) {
+          let parentAuto, childAuto;
+          parentAuto = setupAutocomplete(data.goals, 'parent-autocomplete', 'parent-dropdown', 'parent-selected', () => childAuto ? childAuto.getSelected() : []);
+          childAuto = setupAutocomplete(data.goals, 'child-autocomplete', 'child-dropdown', 'child-selected', () => parentAuto ? parentAuto.getSelected() : []);
+          window.parentAuto = parentAuto;
+          window.childAuto = childAuto;
+        }
       })
       .catch(() => console.error('Ошибка при загрузке целей'));
   }
