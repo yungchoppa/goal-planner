@@ -109,7 +109,9 @@ export function renderGraph(goals, graphContainer) {
       line.setAttribute('y1', source.y);
       line.setAttribute('x2', tx);
       line.setAttribute('y2', ty);
-      line.setAttribute('stroke', '#94a3b8');
+      // Зеленый цвет для стрелки, если source (ребенок) Done
+      const isDone = goals.find(g => g.id === source.id)?.done;
+      line.setAttribute('stroke', isDone ? '#22c55e' : '#94a3b8');
       line.setAttribute('stroke-width', '3');
       line.setAttribute('marker-end', 'url(#arrowhead)');
       svg.appendChild(line);
@@ -124,7 +126,9 @@ export function renderGraph(goals, graphContainer) {
       card.style.left = (node.x - cardWidth / 2) + 'px';
       card.style.top = (node.y - cardHeight / 2) + 'px';
       card.style.zIndex = 2;
-      card.innerHTML = `<div class="font-bold text-lg mb-2 text-slate-900 dark:text-slate-100">${node.name}</div>`;
+      // Добавляем ✅ к названию, если Done
+      const isDone = goals.find(g => g.id === node.id)?.done;
+      card.innerHTML = `<div class="font-bold text-lg mb-2 text-slate-900 dark:text-slate-100">${node.name}${isDone ? ' ✅' : ''}</div>`;
       cardLayer.appendChild(card);
       // Drag & drop
       card.onmousedown = function(e) {
