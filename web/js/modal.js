@@ -3,6 +3,8 @@
  * goalDTO: { id, name, parentIDs, childIDs, x, y }
  */
 export function openModalEdit(goalDTO) {
+  const doneInput = document.getElementById('goal-done');
+  if (doneInput) doneInput.checked = !!goalDTO.done;
   const modal = document.getElementById('modal');
   const goalTitleInput = document.getElementById('goal-title');
   const header = modal.querySelector('h2');
@@ -10,6 +12,8 @@ export function openModalEdit(goalDTO) {
   modal.classList.remove('hidden');
   goalTitleInput.value = goalDTO.name || '';
   goalTitleInput.focus();
+  const descInput = document.getElementById('goal-description');
+  if (descInput) descInput.value = goalDTO.description || '';
   // Автокомплиты
   let parentIDs = goalDTO.parentIDs ? goalDTO.parentIDs.map(String) : [];
   let childIDs = goalDTO.childIDs ? goalDTO.childIDs.map(String) : [];
@@ -33,6 +37,8 @@ export function openModalEdit(goalDTO) {
  * Открыть модальное окно и сфокусировать поле ввода
  */
 export function openModal() {
+  const doneInput = document.getElementById('goal-done');
+  if (doneInput) doneInput.checked = false;
   const modal = document.getElementById('modal');
   const goalTitleInput = document.getElementById('goal-title');
   const header = modal.querySelector('h2');
@@ -44,6 +50,8 @@ export function openModal() {
   // Сбросить выбранные parents/childs
   if (window.parentAuto) window.parentAuto.setSelected([]);
   if (window.childAuto) window.childAuto.setSelected([]);
+  const descInput = document.getElementById('goal-description');
+  if (descInput) descInput.value = '';
 }
 
 /**

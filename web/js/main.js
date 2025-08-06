@@ -52,11 +52,13 @@ document.addEventListener('DOMContentLoaded', function() {
       const name = document.getElementById('goal-title').value.trim();
       const parentIDs = window.parentAuto ? window.parentAuto.getSelected().map(String) : [];
       const childIDs = window.childAuto ? window.childAuto.getSelected().map(String) : [];
+      const description = document.getElementById('goal-description').value;
+      const done = document.getElementById('goal-done').checked;
       if (!name) return;
       // Если редактируем существующую цель
       if (window.editGoalId) {
         // Получаем текущие координаты (если есть)
-        const goal = { id: window.editGoalId, name, parentIDs, childIDs };
+        const goal = { id: window.editGoalId, name, parentIDs, childIDs, description, done };
         // Попробуем найти текущие x/y
         const card = document.getElementById('goals-graph');
         let x = null, y = null;
@@ -93,7 +95,9 @@ document.addEventListener('DOMContentLoaded', function() {
             parentIDs, 
             childIDs,
             x: centerX,
-            y: centerY
+            y: centerY,
+            description,
+            done
           })
         })
           .then(res => {

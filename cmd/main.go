@@ -18,6 +18,11 @@ func initGoals() {
 	first := goal.New(1, "first", nil, nil)
 	second := goal.New(2, "second", nil, nil)
 	third := goal.New(3, "third", nil, nil)
+	// Пример: можно задать описание
+	first.Description = "Описание для первой цели"
+	second.Description = "Описание для второй цели"
+	second.Done = true
+	third.Description = "Описание для третьей цели"
 	first.AddChilds(second, third)
 
 	// Задаём начальные координаты для стартовых целей
@@ -65,11 +70,12 @@ func addGoal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Name      string   `json:"name"`
-		ParentIDs []string `json:"parentIDs"`
-		ChildIDs  []string `json:"childIDs"`
-		X         float64  `json:"x"`
-		Y         float64  `json:"y"`
+		Name        string   `json:"name"`
+		ParentIDs   []string `json:"parentIDs"`
+		ChildIDs    []string `json:"childIDs"`
+		X           float64  `json:"x"`
+		Y           float64  `json:"y"`
+		Description string   `json:"description"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
@@ -87,12 +93,13 @@ func addGoal(w http.ResponseWriter, r *http.Request) {
 	newId := strconv.Itoa(maxId + 1)
 	// Формируем новый GoalDTO
 	newGoal := goal.GoalDTO{
-		ID:        newId,
-		Name:      req.Name,
-		ParentIDs: req.ParentIDs,
-		ChildIDs:  req.ChildIDs,
-		X:         req.X,
-		Y:         req.Y,
+		ID:          newId,
+		Name:        req.Name,
+		ParentIDs:   req.ParentIDs,
+		ChildIDs:    req.ChildIDs,
+		X:           req.X,
+		Y:           req.Y,
+		Description: req.Description,
 	}
 	// Обновляем связи у родителей
 	for _, pid := range req.ParentIDs {
