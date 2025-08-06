@@ -168,6 +168,19 @@ export function renderGraph(goals, graphContainer) {
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('mouseup', onMouseUp);
       };
+      // Double click для редактирования цели
+      card.ondblclick = function(e) {
+        e.preventDefault();
+        // Открываем модальное окно в режиме редактирования
+        if (window.openModalEdit) {
+          // Находим цель по id
+          const goal = goals.find(g => g.id === node.id);
+          if (goal) {
+            window.lastEditGoalObj = goal; // для передачи x/y
+            window.openModalEdit(goal);
+          }
+        }
+      };
     });
   }
     let tickCount = 0;

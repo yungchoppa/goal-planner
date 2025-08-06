@@ -1,7 +1,7 @@
 // Точка входа приложения. Инициализация, загрузка данных, связывание модулей
 // Подключите D3.js в index.html:
 // <script src="https://d3js.org/d3.v7.min.js"></script>
-import { openModal, closeModal, resetAddGoalForm, setupModalHandlers } from './modal.js';
+import { openModal, closeModal, resetAddGoalForm, setupModalHandlers, openModalEdit } from './modal.js';
 import { setupAutocomplete } from './autocomplete.js';
 import { renderGraph } from './graph.js';
 
@@ -15,6 +15,7 @@ function loadGoals() {
     .then(response => response.json())
     .then(data => {
       renderGraph(data.goals, graphContainer);
+      window.allGoals = data.goals;
       // --- Autocomplete for Add Goal form ---
       if (document.getElementById('parent-autocomplete') && document.getElementById('child-autocomplete')) {
         let parentAuto, childAuto;
@@ -29,6 +30,8 @@ function loadGoals() {
 
 // --- Инициализация ---
 document.addEventListener('DOMContentLoaded', function() {
+  // Экспортируем openModalEdit для использования из graph.js
+  window.openModalEdit = openModalEdit;
   // Модальное окно
   setupModalHandlers();
   const addCardBtn = document.getElementById('add-card-btn');
@@ -50,32 +53,60 @@ document.addEventListener('DOMContentLoaded', function() {
       const parentIDs = window.parentAuto ? window.parentAuto.getSelected().map(String) : [];
       const childIDs = window.childAuto ? window.childAuto.getSelected().map(String) : [];
       if (!name) return;
-      
-      // Задаём координаты для новой цели в центре экрана
-      const centerX = (graphContainer.offsetWidth || window.innerWidth) / 2;
-      const centerY = (graphContainer.offsetHeight || 600) / 2;
-      
-      fetch('/api/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name, 
-          parentIDs, 
-          childIDs,
-          x: centerX,
-          y: centerY
+      // Если редактируем существующую цель
+      if (window.editGoalId) {
+        // Получаем текущие координаты (если есть)
+        const goal = { id: window.editGoalId, name, parentIDs, childIDs };
+        // Попробуем найти текущие x/y
+        const card = document.getElementById('goals-graph');
+        let x = null, y = null;
+        if (window.lastEditGoalObj && typeof window.lastEditGoalObj.x === 'number' && typeof window.lastEditGoalObj.y === 'number') {
+          x = window.lastEditGoalObj.x;
+          y = window.lastEditGoalObj.y;
+        }
+        goal.x = x;
+        goal.y = y;
+        fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(goal)
         })
-      })
-        .then(res => {
-          if (!res.ok) throw new Error('Server error');
-          return res.json();
+          .then(res => {
+            if (!res.ok) throw new Error('Server error');
+            return res.json();
+          })
+          .then(() => {
+            closeModal();
+            resetAddGoalForm();
+            loadGoals();
+          })
+          .catch(() => alert('Ошибка при сохранении цели'));
+      } else {
+        // Добавление новой цели
+        const centerX = (graphContainer.offsetWidth || window.innerWidth) / 2;
+        const centerY = (graphContainer.offsetHeight || 600) / 2;
+        fetch('/api/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            name, 
+            parentIDs, 
+            childIDs,
+            x: centerX,
+            y: centerY
+          })
         })
-        .then(() => {
-          closeModal();
-          resetAddGoalForm();
-          loadGoals();
-        })
-        .catch(() => alert('Ошибка при добавлении цели'));
+          .then(res => {
+            if (!res.ok) throw new Error('Server error');
+            return res.json();
+          })
+          .then(() => {
+            closeModal();
+            resetAddGoalForm();
+            loadGoals();
+          })
+          .catch(() => alert('Ошибка при добавлении цели'));
+      }
     }
     if (e.target && e.target.id === 'cancel-add-goal') {
       closeModal();
