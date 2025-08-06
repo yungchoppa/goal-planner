@@ -66,6 +66,7 @@ export function setupAutocomplete(goals, inputId, dropdownId, selectedId, getOth
   });
   return {
     getSelected: () => selectedGoals,
-    setSelected: ids => { selectedGoals = ids; renderSelected(); }
+    setSelected: ids => { selectedGoals = ids; renderSelected(); },
+    updateGoals: newGoals => { goals = newGoals; }
   };
 }

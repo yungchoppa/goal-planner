@@ -73,6 +73,18 @@ export function openModalEdit(goalDTO) {
   }
   if (window.parentAuto) window.parentAuto.setSelected(parentIDs);
   if (window.childAuto) window.childAuto.setSelected(childIDs);
+  
+  // Обновляем автокомплиты, исключая текущую цель из списка доступных опций
+  if (window.allGoals && goalDTO.id) {
+    const filteredGoals = window.allGoals.filter(g => g.id != goalDTO.id);
+    if (window.parentAuto) {
+      window.parentAuto.updateGoals(filteredGoals);
+    }
+    if (window.childAuto) {
+      window.childAuto.updateGoals(filteredGoals);
+    }
+  }
+  
   // Сохраняем id редактируемой цели
   window.editGoalId = goalDTO.id;
 }
@@ -106,6 +118,13 @@ export function openModal() {
   // Сбросить выбранные parents/childs
   if (window.parentAuto) window.parentAuto.setSelected([]);
   if (window.childAuto) window.childAuto.setSelected([]);
+  
+  // Восстанавливаем полный список целей для автокомплита
+  if (window.allGoals) {
+    if (window.parentAuto) window.parentAuto.updateGoals(window.allGoals);
+    if (window.childAuto) window.childAuto.updateGoals(window.allGoals);
+  }
+  
   const descInput = document.getElementById('goal-description');
   if (descInput) descInput.value = '';
 }

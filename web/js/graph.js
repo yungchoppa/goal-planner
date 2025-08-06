@@ -85,14 +85,23 @@ export function renderGraph(goals, graphContainer) {
     }
     const cardWidth = 220;
     const cardHeight = 80;
-    links.forEach(link => {
+    // Пересоздаём массив links по актуальным связям
+    const currentLinks = [];
+    goals.forEach(g => {
+      if (g.childIDs) {
+        g.childIDs.forEach(childId => {
+          currentLinks.push({ source: childId, target: g.id });
+        });
+      }
+    });
+    currentLinks.forEach(link => {
       let source = link.source;
       let target = link.target;
       if (typeof source === 'string' || typeof source === 'number') {
-        source = nodes.find(n => n.id === source);
+        source = nodes.find(n => n.id == source);
       }
       if (typeof target === 'string' || typeof target === 'number') {
-        target = nodes.find(n => n.id === target);
+        target = nodes.find(n => n.id == target);
       }
       if (!source || !target) return;
       if (
@@ -110,7 +119,7 @@ export function renderGraph(goals, graphContainer) {
       line.setAttribute('x2', tx);
       line.setAttribute('y2', ty);
       // Зеленый цвет для стрелки, если source (ребенок) Done
-      const isDone = goals.find(g => g.id === source.id)?.done;
+      const isDone = goals.find(g => g.id == source.id)?.done;
       line.setAttribute('stroke', isDone ? '#22c55e' : '#94a3b8');
       line.setAttribute('stroke-width', '3');
       line.setAttribute('marker-end', 'url(#arrowhead)');
@@ -131,7 +140,7 @@ export function renderGraph(goals, graphContainer) {
       const mainZone = document.createElement('div');
       mainZone.className = 'flex-1 p-4 cursor-move';
       // Добавляем ✅ к названию, если Done
-      const goalObj = goals.find(g => g.id === node.id);
+      const goalObj = goals.find(g => g.id == node.id);
       const isDone = goalObj?.done;
       mainZone.innerHTML = `<div class="font-bold text-lg mb-2 text-slate-900 dark:text-slate-100">${node.name}${isDone ? ' ✅' : ''}</div>`;
 
@@ -145,7 +154,7 @@ export function renderGraph(goals, graphContainer) {
       editZone.onclick = function(e) {
         e.stopPropagation();
         if (window.openModalEdit) {
-          const goal = goals.find(g => g.id === node.id);
+          const goal = goals.find(g => g.id == node.id);
           if (goal) {
             window.lastEditGoalObj = goal;
             window.openModalEdit(goal);
@@ -177,7 +186,7 @@ export function renderGraph(goals, graphContainer) {
           node.y = node.fy;
           node._fixed = true;
           if (typeof node.x === 'number' && typeof node.y === 'number') {
-            const goal = goals.find(g => g.id === node.id);
+            const goal = goals.find(g => g.id == node.id);
             if (goal) {
               goal.x = node.x;
               goal.y = node.y;
