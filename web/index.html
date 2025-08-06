@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Список слов</title>
+  <title>Goal planner</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -63,9 +63,13 @@
       <button id="save-btn" class="w-full bg-slate-500 hover:bg-slate-600 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-transform duration-200 active:scale-95">Сохранить</button>
     </div>
   </div>
+  <!-- D3.js для графа -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="js/main.js"></script>
+  <!-- Основной JS: точка входа, импортирует все модули -->
+  <script type="module" src="js/main.js"></script>
+  <!-- Тема: можно оставить отдельным скриптом, не модуль -->
   <script src="js/theme.js"></script>
-  <script src="js/modal.js"></script>
+  <!-- Модули импортируются через main.js, отдельные подключения не нужны -->
+  <!-- <script src="js/modal.js"></script> -->
 </body>
 </html>

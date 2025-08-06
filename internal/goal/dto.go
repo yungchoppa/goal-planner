@@ -5,4 +5,6 @@ type GoalDTO struct {
 	Name      string   `json:"name"`
 	ParentIDs []string `json:"parentIDs"`
 	ChildIDs  []string `json:"childIDs"`
+	X         float64  `json:"x"`
+	Y         float64  `json:"y"`
 }
