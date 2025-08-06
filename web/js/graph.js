@@ -127,7 +127,8 @@ export function renderGraph(goals, graphContainer) {
       card.style.top = (node.y - cardHeight / 2) + 'px';
       card.style.zIndex = 2;
       // Добавляем ✅ к названию, если Done
-      const isDone = goals.find(g => g.id === node.id)?.done;
+      const goalObj = goals.find(g => g.id === node.id);
+      const isDone = goalObj?.done;
       card.innerHTML = `<div class="font-bold text-lg mb-2 text-slate-900 dark:text-slate-100">${node.name}${isDone ? ' ✅' : ''}</div>`;
       cardLayer.appendChild(card);
       // Drag & drop
@@ -224,4 +225,8 @@ export function renderGraph(goals, graphContainer) {
       }
     });
     update();
+    // Экспортируем функцию для внешнего вызова
+    window.updateGoalVisual = function() {
+      update();
+    };
 }

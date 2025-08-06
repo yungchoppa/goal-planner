@@ -9,6 +9,7 @@ type Goal struct {
 	Childs      []*Goal `json:"childs"`
 	Description string  `json:"description"`
 	Done        bool    `json:"done"`
+	Progress    float64 `json:"progress"`
 }
 
 func New(id int, name string, parents, childs []*Goal) *Goal {
@@ -19,6 +20,7 @@ func New(id int, name string, parents, childs []*Goal) *Goal {
 		Childs:      childs,
 		Description: "",
 		Done:        false,
+		Progress:    0.0,
 	}
 }
 
@@ -36,6 +38,7 @@ func (g *Goal) ToDTO() *GoalDTO {
 		Name:        g.Name,
 		Description: g.Description,
 		Done:        g.Done,
+		Progress:    g.Progress,
 	}
 
 	for _, p := range g.Parents {

@@ -9,4 +9,5 @@ type GoalDTO struct {
 	Y           float64  `json:"y"`
 	Description string   `json:"description"`
 	Done        bool     `json:"done"`
+	Progress    float64  `json:"progress"`
 }

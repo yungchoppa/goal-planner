@@ -14,6 +14,21 @@ function loadGoals() {
   fetch('/api/goals')
     .then(response => response.json())
     .then(data => {
+      // Пересчёт progress и done для всех целей
+      function recalcGoals(goals) {
+        // Сначала сбрасываем progress и done для родителей
+        goals.forEach(g => {
+          if (Array.isArray(g.childIDs) && g.childIDs.length > 0) {
+            const childs = g.childIDs.map(cid => goals.find(goal => goal.id === cid)).filter(Boolean);
+            const doneCount = childs.filter(c => c.done).length;
+            g.progress = childs.length > 0 ? Math.round((doneCount / childs.length) * 100) : (g.done ? 100 : 0);
+            g.done = g.progress === 100;
+          } else {
+            g.progress = g.done ? 100 : 0;
+          }
+        });
+      }
+      recalcGoals(data.goals);
       renderGraph(data.goals, graphContainer);
       window.allGoals = data.goals;
       // --- Autocomplete for Add Goal form ---
@@ -59,8 +74,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (window.editGoalId) {
         // Получаем текущие координаты (если есть)
         const goal = { id: window.editGoalId, name, parentIDs, childIDs, description, done };
-        // Попробуем найти текущие x/y
-        const card = document.getElementById('goals-graph');
         let x = null, y = null;
         if (window.lastEditGoalObj && typeof window.lastEditGoalObj.x === 'number' && typeof window.lastEditGoalObj.y === 'number') {
           x = window.lastEditGoalObj.x;
@@ -68,21 +81,49 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         goal.x = x;
         goal.y = y;
-        fetch('/api/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(goal)
+
+        // Собираем все затронутые цели (сама и родители)
+        let affectedGoals = [goal];
+        if (window.allGoals) {
+          // Рекурсивно собираем родителей
+          function collectParents(gid, acc) {
+            const g = window.allGoals.find(go => go.id === gid);
+            if (g && Array.isArray(g.parentIDs)) {
+              g.parentIDs.forEach(pid => {
+                const parent = window.allGoals.find(go => go.id === pid);
+                if (parent && !acc.some(a => a.id === parent.id)) {
+                  acc.push({
+                    id: parent.id,
+                    name: parent.name,
+                    parentIDs: parent.parentIDs,
+                    childIDs: parent.childIDs,
+                    description: parent.description,
+                    done: parent.done,
+                    progress: parent.progress,
+                    x: parent.x,
+                    y: parent.y
+                  });
+                  collectParents(parent.id, acc);
+                }
+              });
+            }
+          }
+          collectParents(goal.id, affectedGoals);
+        }
+        // Сохраняем все затронутые цели
+        Promise.all(affectedGoals.map(g =>
+          fetch('/api/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(g)
+          })
+        ))
+        .then(() => {
+          closeModal();
+          resetAddGoalForm();
+          loadGoals();
         })
-          .then(res => {
-            if (!res.ok) throw new Error('Server error');
-            return res.json();
-          })
-          .then(() => {
-            closeModal();
-            resetAddGoalForm();
-            loadGoals();
-          })
-          .catch(() => alert('Ошибка при сохранении цели'));
+        .catch(() => alert('Ошибка при сохранении цели'));
       } else {
         // Добавление новой цели
         const centerX = (graphContainer.offsetWidth || window.innerWidth) / 2;
