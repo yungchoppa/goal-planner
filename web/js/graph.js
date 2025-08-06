@@ -120,16 +120,81 @@ export function renderGraph(goals, graphContainer) {
     nodes.forEach(node => {
       if (node.x === undefined || node.y === undefined) return;
       const card = document.createElement('div');
-      card.className = 'bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-lg p-4 min-w-[200px] absolute cursor-move select-none transition duration-200';
+      card.className = 'bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-lg min-w-[200px] absolute select-none transition duration-200 flex';
       card.style.width = cardWidth + 'px';
       card.style.height = cardHeight + 'px';
       card.style.left = (node.x - cardWidth / 2) + 'px';
       card.style.top = (node.y - cardHeight / 2) + 'px';
       card.style.zIndex = 2;
+
+      // Левая часть — основная зона (80%)
+      const mainZone = document.createElement('div');
+      mainZone.className = 'flex-1 p-4 cursor-move';
       // Добавляем ✅ к названию, если Done
       const goalObj = goals.find(g => g.id === node.id);
       const isDone = goalObj?.done;
-      card.innerHTML = `<div class="font-bold text-lg mb-2 text-slate-900 dark:text-slate-100">${node.name}${isDone ? ' ✅' : ''}</div>`;
+      mainZone.innerHTML = `<div class="font-bold text-lg mb-2 text-slate-900 dark:text-slate-100">${node.name}${isDone ? ' ✅' : ''}</div>`;
+
+      // Правая часть — зона редактирования (20%)
+      const editZone = document.createElement('div');
+      editZone.className = 'flex items-center justify-center w-[44px] h-full bg-slate-100 dark:bg-slate-800 rounded-r-lg shadow-md cursor-pointer transition hover:bg-slate-200 dark:hover:bg-slate-700';
+      editZone.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+      editZone.innerHTML = '<span class="text-lg">✏️</span>';
+
+      // Открытие модального окна по клику на editZone
+      editZone.onclick = function(e) {
+        e.stopPropagation();
+        if (window.openModalEdit) {
+          const goal = goals.find(g => g.id === node.id);
+          if (goal) {
+            window.lastEditGoalObj = goal;
+            window.openModalEdit(goal);
+          }
+        }
+      };
+
+      // Drag & drop только на основной зоне
+      mainZone.onmousedown = function(e) {
+        e.preventDefault();
+        card.style.zIndex = 10;
+        nodes.forEach(n => { if (n !== node) { n.fx = n.x; n.fy = n.y; } });
+        node.fx = node.x;
+        node.fy = node.y;
+        const offsetX = e.clientX - node.x;
+        const offsetY = e.clientY - node.y;
+        function onMouseMove(ev) {
+          node.fx = ev.clientX - offsetX;
+          node.fy = Math.max(ev.clientY - offsetY, 48);
+          node.x = node.fx;
+          node.y = node.fy;
+          update();
+        }
+        function onMouseUp() {
+          card.style.zIndex = 2;
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+          node.x = node.fx;
+          node.y = node.fy;
+          node._fixed = true;
+          if (typeof node.x === 'number' && typeof node.y === 'number') {
+            const goal = goals.find(g => g.id === node.id);
+            if (goal) {
+              goal.x = node.x;
+              goal.y = node.y;
+              fetch('/api/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(goal)
+              }).catch(() => {});
+            }
+          }
+        }
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      };
+
+      card.appendChild(mainZone);
+      card.appendChild(editZone);
       cardLayer.appendChild(card);
       // Drag & drop
       card.onmousedown = function(e) {
@@ -172,19 +237,6 @@ export function renderGraph(goals, graphContainer) {
         }
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('mouseup', onMouseUp);
-      };
-      // Double click для редактирования цели
-      card.ondblclick = function(e) {
-        e.preventDefault();
-        // Открываем модальное окно в режиме редактирования
-        if (window.openModalEdit) {
-          // Находим цель по id
-          const goal = goals.find(g => g.id === node.id);
-          if (goal) {
-            window.lastEditGoalObj = goal; // для передачи x/y
-            window.openModalEdit(goal);
-          }
-        }
       };
     });
   }
